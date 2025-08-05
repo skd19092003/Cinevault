@@ -712,7 +712,16 @@ class MovieApp {
             // Find and remove the card with fade effect
             const cards = document.querySelectorAll('.movie-card');
             cards.forEach(card => {
-                const button = card.querySelector(`button[onclick*="toggle${buttonType.charAt(0).toUpperCase() + buttonType.slice(1)}AndRefresh(${movieId}"]`);
+                // Make sure we're targeting the correct button type
+                let button;
+                if (buttonType === 'watchlist') {
+                    button = card.querySelector(`button[onclick*="toggleWatchlistAndRefresh(${movieId}"]`);
+                } else if (buttonType === 'watched') {
+                    button = card.querySelector(`button[onclick*="toggleWatchedAndRefresh(${movieId}"]`);
+                } else if (buttonType === 'favorites') {
+                    button = card.querySelector(`button[onclick*="toggleFavoriteAndRefresh(${movieId}"]`);
+                }
+        
                 if (button) {
                     card.style.transition = 'opacity 0.2s';
                     card.style.opacity = '0';
@@ -788,8 +797,8 @@ class MovieApp {
             container.innerHTML = `
                 <div class="col-12 text-center py-5">
                     <i class="fas fa-film fa-3x text-muted mb-3"></i>
-                    <h4 class="text-muted">No movies found</h4>
-                    <p class="text-muted">Start adding movies to see them here</p>
+                    <h4 class="text-muted">No movies and series found</h4>
+                    <p class="text-muted">Start adding movies and series to see them here</p>
                 </div>
             `;
         }
