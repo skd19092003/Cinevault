@@ -215,32 +215,69 @@ class MovieApp {
         this.showLoading(true);
         
         try {
-            let url = `${this.BASE_URL}/discover/movie?api_key=${this.API_KEY}&sort_by=${this.currentSort}&page=${this.apiPage}`;
+            let url;
             
             if (this.currentQuery) {
+                // For text searches, we need to filter by year after getting results
                 url = `${this.BASE_URL}/search/movie?api_key=${this.API_KEY}&query=${encodeURIComponent(this.currentQuery)}&page=${this.apiPage}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Filter results by year if year filter is applied
+                let filteredResults = data.results;
+                if (this.currentYear) {
+                    filteredResults = filteredResults.filter(movie => {
+                        const releaseYear = movie.release_date ? movie.release_date.substring(0, 4) : '';
+                        return releaseYear === this.currentYear.toString();
+                    });
+                }
+                
+                // Apply genre filter if specified
+                if (this.currentGenre) {
+                    filteredResults = filteredResults.filter(movie => 
+                        movie.genre_ids && movie.genre_ids.includes(parseInt(this.currentGenre))
+                    );
+                }
+                
+                // Sort results if needed
+                if (this.currentSort === 'release_date.desc') {
+                    filteredResults.sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
+                } else if (this.currentSort === 'vote_average.desc') {
+                    filteredResults.sort((a, b) => b.vote_average - a.vote_average);
+                }
+                
+                // Apply pagination
+                const startIdx = (this.apiPage - 1) * 20;
+                const paginatedResults = filteredResults.slice(startIdx, startIdx + 20);
+                
+                this.totalPages = Math.ceil(filteredResults.length / 20);
+                this.displayMovies(paginatedResults);
+            } else {
+                // For discover view with filters
+                url = `${this.BASE_URL}/discover/movie?api_key=${this.API_KEY}&sort_by=${this.currentSort}&page=${this.apiPage}`;
+                
+                // Add filters
+                if (this.currentGenre) {
+                    url += `&with_genres=${this.currentGenre}`;
+                }
+                
+                if (this.currentYear) {
+                    // Use primary_release_year for more accurate filtering
+                    url += `&primary_release_year=${this.currentYear}`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Limit to 20 movies per page
+                const limitedResults = data.results.slice(0, 20);
+                // Calculate total pages based on our 500 movie limit
+                const totalResults = Math.min(500, data.total_results);
+                this.totalPages = Math.min(25, Math.ceil(totalResults / 20));
+                
+                this.displayMovies(limitedResults);
             }
-            
-            if (this.currentGenre) {
-                url += `&with_genres=${this.currentGenre}`;
-            }
-            
-            if (this.currentYear) {
-                url += `&year=${this.currentYear}`;
-            }
-            
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            // Show 20 movies per page, limit to 500 total movies (25 pages)
-            const maxMovies = 500;
-            const moviesPerPage = 20;
-            const maxPages = Math.min(25, Math.ceil(maxMovies / moviesPerPage));
-            
-            const limitedResults = data.results.slice(0, moviesPerPage);
-            this.totalPages = maxPages; // Use our calculated max pages
-            
-            this.displayMovies(limitedResults);
         } catch (error) {
             console.error('Error searching movies:', error);
         } finally {
