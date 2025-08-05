@@ -703,61 +703,89 @@ class MovieApp {
         await this.toggleWatchlist(movieId);
         this.updateMovieButtonStates(movieId);
     }
-
+    
     async toggleFavoriteAndRefresh(movieId) {
         await this.toggleFavorite(movieId);
         this.updateMovieButtonStates(movieId);
     }
-
+    
     async toggleWatchedAndRefresh(movieId) {
         await this.toggleWatched(movieId);
         this.updateMovieButtonStates(movieId);
     }
 
-    // Update only the button states for a specific movie without refreshing the entire list
     updateMovieButtonStates(movieId) {
-        // Find all movie cards with this movie ID
-        const movieCards = document.querySelectorAll('.movie-card');
+        // Store scroll position
+        const scrollPosition = window.scrollY || document.documentElement.scrollTop;
         
-        movieCards.forEach(card => {
-            // Check if this card contains buttons for the specific movie
-            const watchlistBtn = card.querySelector(`button[onclick*="toggleWatchlistAndRefresh(${movieId})"]`);
-            const favoriteBtn = card.querySelector(`button[onclick*="toggleFavoriteAndRefresh(${movieId})"]`);
-            const watchedBtn = card.querySelector(`button[onclick*="toggleWatchedAndRefresh(${movieId})"]`);
+        // For watchlist/watched/favorites pages
+        if (['watchlist', 'watched', 'favorites'].includes(this.currentPage)) {
+            // Find and remove the card with fade effect
+            const cards = document.querySelectorAll('.movie-card');
+            cards.forEach(card => {
+                const button = card.querySelector(`button[onclick*="${movieId}"]`);
+                if (button) {
+                    card.style.transition = 'opacity 0.2s';
+                    card.style.opacity = '0';
+                    setTimeout(() => {
+                        card.remove();
+                        // Show empty state if no cards left
+                        if (document.querySelectorAll('.movie-card').length === 0) {
+                            this.showEmptyState();
+                        }
+                    }, 200);
+                }
+            });
+        } 
+        // For discover page
+        else {
+            // Just update button text
+            const buttons = document.querySelectorAll(`
+                button[onclick*="toggleWatchlistAndRefresh(${movieId})"],
+                button[onclick*="toggleFavoriteAndRefresh(${movieId})"],
+                button[onclick*="toggleWatchedAndRefresh(${movieId})"]
+            `);
             
-            if (watchlistBtn || favoriteBtn || watchedBtn) {
-                // Update button states
-                const isWatchlist = this.isMovieStored(this.STORAGE_KEYS.watchlist, movieId);
-                const isFavorite = this.isMovieStored(this.STORAGE_KEYS.favorites, movieId);
-                const isWatched = this.isMovieStored(this.STORAGE_KEYS.watched, movieId);
+            buttons.forEach(button => {
+                const isWatchlist = button.onclick.toString().includes('toggleWatchlistAndRefresh');
+                const isFavorite = button.onclick.toString().includes('toggleFavoriteAndRefresh');
+                const isWatched = button.onclick.toString().includes('toggleWatchedAndRefresh');
                 
-                if (watchlistBtn) {
-                    watchlistBtn.innerHTML = `
-                        <i class="fas fa-clock"></i>
-                        ${isWatchlist ? "Remove from Watch Later" : "Add to Watch Later"}
-                    `;
+                if (isWatchlist) {
+                    const isInList = this.isMovieStored(this.STORAGE_KEYS.watchlist, movieId);
+                    button.innerHTML = `<i class="fas fa-clock"></i> ${isInList ? 'Remove from' : 'Add to'} Watch Later`;
                 }
-                
-                if (favoriteBtn) {
-                    favoriteBtn.innerHTML = `
-                        <i class="fas fa-heart"></i>
-                        ${isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-                    `;
+                else if (isFavorite) {
+                    const isInList = this.isMovieStored(this.STORAGE_KEYS.favorites, movieId);
+                    button.innerHTML = `<i class="fas fa-heart"></i> ${isInList ? 'Remove from' : 'Add to'} Favorites`;
                 }
-                
-                if (watchedBtn) {
-                    watchedBtn.innerHTML = `
-                        <i class="fas fa-check-circle"></i>
-                        ${isWatched ? "Remove from Watched" : "Add to Watched"}
-                    `;
+                else if (isWatched) {
+                    const isInList = this.isMovieStored(this.STORAGE_KEYS.watched, movieId);
+                    button.innerHTML = `<i class="fas fa-check-circle"></i> ${isInList ? 'Remove from' : 'Add to'} Watched`;
                 }
-            }
-        });
+            });
+        }
         
         // Update badges
         this.updateBadges();
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollPosition);
     }
-
+    
+    // Add this helper method
+    showEmptyState() {
+        const container = document.querySelector('.movie-grid') || document.getElementById('movie-box');
+        if (container) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-film fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No movies found</h4>
+                    <p class="text-muted">Start adding movies to see them here</p>
+                </div>
+            `;
+        }
+    }
     async openTrailer(movieId) {
         try {
             const response = await fetch(`${this.BASE_URL}/movie/${movieId}/videos?api_key=${this.API_KEY}`);

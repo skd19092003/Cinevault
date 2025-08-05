@@ -387,6 +387,7 @@ body {
     display: flex;
     flex-direction: column;
     position: relative;
+    transition: opacity 0.2s ease-out;
 }
 
 .movie-card:hover {
