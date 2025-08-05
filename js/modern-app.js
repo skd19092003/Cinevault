@@ -699,31 +699,20 @@ class MovieApp {
     }
     
     // Helper methods for UI refresh and actions
-    async toggleWatchlistAndRefresh(movieId) {
-        await this.toggleWatchlist(movieId);
-        this.updateMovieButtonStates(movieId);
-    }
-    
-    async toggleFavoriteAndRefresh(movieId) {
-        await this.toggleFavorite(movieId);
-        this.updateMovieButtonStates(movieId);
-    }
-    
-    async toggleWatchedAndRefresh(movieId) {
-        await this.toggleWatched(movieId);
-        this.updateMovieButtonStates(movieId);
-    }
-
-    updateMovieButtonStates(movieId) {
+    updateMovieButtonStates(movieId, buttonType = null) {
         // Store scroll position
         const scrollPosition = window.scrollY || document.documentElement.scrollTop;
         
-        // For watchlist/watched/favorites pages
-        if (['watchlist', 'watched', 'favorites'].includes(this.currentPage)) {
+        // Only remove card if we're in the matching section and it's a remove action
+        if (buttonType && 
+            ((this.currentPage === 'watchlist' && buttonType === 'watchlist') ||
+             (this.currentPage === 'watched' && buttonType === 'watched') ||
+             (this.currentPage === 'favorites' && buttonType === 'favorites'))) {
+            
             // Find and remove the card with fade effect
             const cards = document.querySelectorAll('.movie-card');
             cards.forEach(card => {
-                const button = card.querySelector(`button[onclick*="${movieId}"]`);
+                const button = card.querySelector(`button[onclick*="toggle${buttonType.charAt(0).toUpperCase() + buttonType.slice(1)}AndRefresh(${movieId}"]`);
                 if (button) {
                     card.style.transition = 'opacity 0.2s';
                     card.style.opacity = '0';
@@ -737,7 +726,7 @@ class MovieApp {
                 }
             });
         } 
-        // For discover page
+        // For discover page or when not removing from current section
         else {
             // Just update button text
             const buttons = document.querySelectorAll(`
@@ -771,6 +760,25 @@ class MovieApp {
         
         // Restore scroll position
         window.scrollTo(0, scrollPosition);
+    }
+    
+    // Update the toggle methods to pass the button type
+    async toggleWatchlistAndRefresh(movieId) {
+        const wasInList = this.isMovieStored(this.STORAGE_KEYS.watchlist, movieId);
+        await this.toggleWatchlist(movieId);
+        this.updateMovieButtonStates(movieId, wasInList ? 'watchlist' : null);
+    }
+    
+    async toggleFavoriteAndRefresh(movieId) {
+        const wasInList = this.isMovieStored(this.STORAGE_KEYS.favorites, movieId);
+        await this.toggleFavorite(movieId);
+        this.updateMovieButtonStates(movieId, wasInList ? 'favorites' : null);
+    }
+    
+    async toggleWatchedAndRefresh(movieId) {
+        const wasInList = this.isMovieStored(this.STORAGE_KEYS.watched, movieId);
+        await this.toggleWatched(movieId);
+        this.updateMovieButtonStates(movieId, wasInList ? 'watched' : null);
     }
     
     // Add this helper method
