@@ -701,17 +701,61 @@ class MovieApp {
     // Helper methods for UI refresh and actions
     async toggleWatchlistAndRefresh(movieId) {
         await this.toggleWatchlist(movieId);
-        this.refreshCurrentMovies();
+        this.updateMovieButtonStates(movieId);
     }
 
     async toggleFavoriteAndRefresh(movieId) {
         await this.toggleFavorite(movieId);
-        this.refreshCurrentMovies();
+        this.updateMovieButtonStates(movieId);
     }
 
     async toggleWatchedAndRefresh(movieId) {
         await this.toggleWatched(movieId);
-        this.refreshCurrentMovies();
+        this.updateMovieButtonStates(movieId);
+    }
+
+    // Update only the button states for a specific movie without refreshing the entire list
+    updateMovieButtonStates(movieId) {
+        // Find all movie cards with this movie ID
+        const movieCards = document.querySelectorAll('.movie-card');
+        
+        movieCards.forEach(card => {
+            // Check if this card contains buttons for the specific movie
+            const watchlistBtn = card.querySelector(`button[onclick*="toggleWatchlistAndRefresh(${movieId})"]`);
+            const favoriteBtn = card.querySelector(`button[onclick*="toggleFavoriteAndRefresh(${movieId})"]`);
+            const watchedBtn = card.querySelector(`button[onclick*="toggleWatchedAndRefresh(${movieId})"]`);
+            
+            if (watchlistBtn || favoriteBtn || watchedBtn) {
+                // Update button states
+                const isWatchlist = this.isMovieStored(this.STORAGE_KEYS.watchlist, movieId);
+                const isFavorite = this.isMovieStored(this.STORAGE_KEYS.favorites, movieId);
+                const isWatched = this.isMovieStored(this.STORAGE_KEYS.watched, movieId);
+                
+                if (watchlistBtn) {
+                    watchlistBtn.innerHTML = `
+                        <i class="fas fa-clock"></i>
+                        ${isWatchlist ? "Remove from Watch Later" : "Add to Watch Later"}
+                    `;
+                }
+                
+                if (favoriteBtn) {
+                    favoriteBtn.innerHTML = `
+                        <i class="fas fa-heart"></i>
+                        ${isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                    `;
+                }
+                
+                if (watchedBtn) {
+                    watchedBtn.innerHTML = `
+                        <i class="fas fa-check-circle"></i>
+                        ${isWatched ? "Remove from Watched" : "Add to Watched"}
+                    `;
+                }
+            }
+        });
+        
+        // Update badges
+        this.updateBadges();
     }
 
     async openTrailer(movieId) {
@@ -735,9 +779,9 @@ class MovieApp {
         switch (this.currentPage) {
             case 'discover':
                 if (this.currentQuery || this.currentGenre || this.currentYear) {
-                    this.searchMovies();
+                    await this.searchMovies();
                 } else {
-                    this.loadPopularMovies();
+                    await this.loadPopularMovies();
                 }
                 break;
             case 'watchlist':
