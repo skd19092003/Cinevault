@@ -182,10 +182,10 @@ class MovieApp {
     async loadPopularMovies() {
         this.showLoading(true);
         try {
-            // Limit to 100 movies total (7 pages with 15 movies each)
-            const maxMovies = 100;
-            const moviesPerPage = 15;
-            const maxPages = Math.ceil(maxMovies / moviesPerPage);
+            // Limit to 500 movies total (25 pages with 20 movies each)
+            const maxMovies = 500;
+            const moviesPerPage = 20;
+            const maxPages = Math.min(25, Math.ceil(maxMovies / moviesPerPage));
             
             // Adjust current page if it exceeds the limit
             if (this.apiPage > maxPages) {
@@ -195,9 +195,9 @@ class MovieApp {
             const response = await fetch(`${this.BASE_URL}/movie/popular?api_key=${this.API_KEY}&page=${this.apiPage}`);
             const data = await response.json();
             
-            // Limit results to our maximum
+            // Limit results to our maximum per page
             const limitedResults = data.results.slice(0, moviesPerPage);
-            this.totalPages = Math.min(maxPages, data.total_pages);
+            this.totalPages = maxPages; // Use our calculated max pages
             
             this.displayMovies(limitedResults);
         } catch (error) {
@@ -232,9 +232,13 @@ class MovieApp {
             const response = await fetch(url);
             const data = await response.json();
             
-            // Limit search results to 15 movies per page for better mobile performance
-            const limitedResults = data.results.slice(0, 15);
-            this.totalPages = Math.min(7, data.total_pages); // Limit to 7 pages max
+            // Show 20 movies per page, limit to 500 total movies (25 pages)
+            const maxMovies = 500;
+            const moviesPerPage = 20;
+            const maxPages = Math.min(25, Math.ceil(maxMovies / moviesPerPage));
+            
+            const limitedResults = data.results.slice(0, moviesPerPage);
+            this.totalPages = maxPages; // Use our calculated max pages
             
             this.displayMovies(limitedResults);
         } catch (error) {
