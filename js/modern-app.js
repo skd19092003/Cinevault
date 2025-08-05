@@ -112,6 +112,12 @@ class MovieApp {
         if (themeToggle) {
             themeToggle.addEventListener('click', () => this.toggleTheme());
         }
+        
+        // Reset filters button
+        const resetFiltersBtn = document.getElementById('reset-filters');
+        if (resetFiltersBtn) {
+            resetFiltersBtn.addEventListener('click', () => this.resetFilters());
+        }
     }
     
     /**
@@ -746,6 +752,32 @@ class MovieApp {
         }
     }
 
+    /**
+     * Resets all filters to their default values and refreshes the movie list
+     */
+    resetFilters() {
+        // Reset filter values
+        this.currentQuery = '';
+        this.currentGenre = '';
+        this.currentYear = '';
+        this.currentSort = 'popularity.desc';
+        this.apiPage = 1;
+        
+        // Update UI elements
+        const searchInput = document.getElementById('search');
+        const genreFilter = document.getElementById('genre-filter');
+        const yearFilter = document.getElementById('year-filter');
+        const sortFilter = document.getElementById('sort-filter');
+        
+        if (searchInput) searchInput.value = '';
+        if (genreFilter) genreFilter.value = '';
+        if (yearFilter) yearFilter.value = '';
+        if (sortFilter) sortFilter.value = 'popularity.desc';
+        
+        // Refresh the movie list
+        this.searchMovies();
+    }
+    
     // Theme Management
     loadTheme() {
         const savedTheme = localStorage.getItem(this.STORAGE_KEYS.theme) || 'dark';
